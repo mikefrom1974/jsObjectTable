@@ -63,9 +63,10 @@ class ObjectTable {
         this._controls = {
             containerID: '',
             pageNum: 1,
-            allKeys: {}, //holds {'key': bool} of key order and whether to show its column
-            selected: {}    //selected[multiSelectColumn] will map a checkbox id to its value and whether it's selected
-                            // i.e. {'Delete': {'select.Delete.1': {'value':'mySvr1', 'selected':false} } }
+            allKeys: {},        //holds {'key': bool} of key order and whether to show its column
+            selected: {},       //selected[multiSelectColumn] will map a checkbox id to its value and whether it's selected
+                                // i.e. {'Delete': [{'boxID': 'select.Delete.1', 'value':'mySvr1', 'selected':false}]}
+            lastClickedBox: {}  //holds the last clicked checkbox for shift selecting. {'boxID': '', 'header': ''}
         }
         //set up styling (will be copied to generated table)
         this.tableColors = {
@@ -845,7 +846,7 @@ class ObjectTable {
         //add multiSelect headers
         for (const hdr in this.config.multiSelect) {
             const headerTxt = hdr;
-            this._controls.selected[hdr] = {};
+            this._controls.selected[hdr] = [];
 
             const tblHead = document.createElement('th');
             tblHead.style.cssText = this.tableHeader.style.cssText;
@@ -866,9 +867,9 @@ class ObjectTable {
             selectClick.style.color = this.tableColors.clickColor;
             selectClick.onclick = () => {
                 let ary = [];
-                for (const boxID in this._controls.selected[hdr]) {
-                    if (this._controls.selected[hdr][boxID]['selected']) {
-                        ary.push(this._controls.selected[hdr][boxID]['value']);
+                for (const obj of this._controls.selected[hdr]) {
+                    if (obj['selected']) {
+                        ary.push(obj['value']);
                     }
                 }
                 this.config.multiSelect[hdr]['func'](ary);
@@ -888,14 +889,9 @@ class ObjectTable {
             invertIcon.alt = 'select inverse';
             invertIcon.style.cursor = 'pointer';
             invertIcon.onclick = () => {
-                for (const boxID in this._controls.selected[hdr]) {
-                    if (this._controls.selected[hdr][boxID]['selected']) {
-                        this._controls.selected[hdr][boxID]['selected'] = false;
-                        document.getElementById(boxID).checked = false;
-                    } else {
-                        this._controls.selected[hdr][boxID]['selected'] = true;
-                        document.getElementById(boxID).checked = true;
-                    }
+                for (const obj of this._controls.selected[hdr]) {
+                    obj['selected'] = !obj['selected'];
+                    document.getElementById(obj['boxID']).checked = obj['selected'];
                 }
                 document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
             }
@@ -1003,9 +999,46 @@ class ObjectTable {
                     const box = document.createElement('input');
                     box.type = 'checkbox';
                     box.id = `select.${hdr}.${rowCount}`;
-                    this._controls.selected[hdr][box.id] = {'value': value, 'selected': false};
-                    box.onclick = () => {
-                        this._controls.selected[hdr][box.id]['selected'] = box.checked;
+                    this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
+                    box.onclick = (e) => {
+                        //check for shift held and shift select
+                        if (e.shiftKey) {
+                            if (this._controls.lastClickedBox['boxID'] && this._controls.lastClickedBox['header'] === hdr) {
+                                let index1 = -1;
+                                let index2 = -1;
+                                for (let i = 0; i < this._controls.selected[hdr].length; i++) {
+                                    const obj = this._controls.selected[hdr][i];
+                                    if (obj['boxID'] === box.id) {index2 = i}
+                                    if (obj['boxID'] === this._controls.lastClickedBox['boxID']) {index1 = i}
+                                }
+                                const box1Checked = this._controls.selected[hdr][index1]['selected'];
+                                let boxes = [];
+                                const unqValues = new Set();
+                                for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                    const oSelected = this._controls.selected[hdr][i];
+                                    unqValues.add(oSelected['selected']);
+                                    const bBox = document.getElementById(oSelected['boxID']);
+                                    boxes.push(bBox);
+                                }
+                                const newBool = (unqValues.size === 1) ? !box1Checked : box1Checked;
+                                for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                    const obj = this._controls.selected[hdr][i];
+                                    obj['selected'] = newBool;
+                                }
+                                for (const bBox of boxes) {
+                                    bBox.checked = newBool;
+                                }
+                            }
+                        } else {
+                            //toggle box
+                            this._controls.lastClickedBox = {'boxID': box.id, 'header': hdr};
+                            for (const obj of this._controls.selected[hdr]) {
+                                if (obj['boxID'] === box.id) {
+                                    obj['selected'] = box.checked;
+                                    break;
+                                }
+                            }
+                        }
                         document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
                     }
                     boxDiv.appendChild(box);
@@ -1124,20 +1157,16 @@ class ObjectTable {
     //selectedCount will return the number of selected items for a given header
     selectedCount(sHdr) {
         let count = 0;
-        if (this._controls.selected[sHdr]) {
-            for (const boxID in this._controls.selected[sHdr]) {
-                if (this._controls.selected[sHdr][boxID]['selected']) {
-                    count++;
-                }
-            }
+        for (const obj of this._controls.selected[sHdr]) {
+            if (obj['selected']) {count++}
         }
         return count;
     }
     //selectAll / None will select all / none of the checkboxes for the given header
     selectAll(sHdr) {
-        for (const boxID in this._controls.selected[sHdr]) {
-            this._controls.selected[sHdr][boxID]['selected'] = true;
-            document.getElementById(boxID).checked = true;
+        for (const obj of this._controls.selected[sHdr]) {
+            obj['selected'] = true;
+            document.getElementById(obj['boxID']).checked = true;
         }
         const icon = document.getElementById(`selectAllIcon${sHdr}`);
         icon.src = this.imageSrc.selectNone;
@@ -1148,15 +1177,14 @@ class ObjectTable {
         document.getElementById(`selectColumn${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
     }
     selectNone(sHdr) {
-        for (const boxID in this._controls.selected[sHdr]) {
-            this._controls.selected[sHdr][boxID]['selected'] = false;
-            document.getElementById(boxID).checked = false;
+        for (const obj of this._controls.selected[sHdr]) {
+            obj['selected'] = false;
+            document.getElementById(obj['boxID']).checked = false;
         }
         const icon = document.getElementById(`selectAllIcon${sHdr}`);
         icon.src = this.imageSrc.selectAll;
         icon.alt = 'select all';
         icon.onclick = () => {this.selectAll(sHdr)};
-        icon.onclick = () => {this.selectNone(sHdr)};
         icon.onmouseover = (e) => {this.toolTip.show(e, 'select all')};
         document.getElementById(`selectColumn${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
     }
