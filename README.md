@@ -14,13 +14,14 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
+**1.1.0**
+* *Added*: Shift-click multiselect on checkbox columns
+
 **1.0.0**
 * *Added*: Initial functionality
 
 ---
 ## ToDo:
-
-* allow shift-select for multiselect columns
 * settings cog to change colors / style
 * default color schemes (dark mode)
 * allow reordering headers by dragging rows
