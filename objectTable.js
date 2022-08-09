@@ -419,7 +419,9 @@ class ObjectTable {
                     if (matchA.length === 3) {
                         const matchB = b.match(rgxNumberSfx);
                         if (matchB.length === 3) {
-                            return (parseInt(matchA[2]) - parseInt(matchB[2])) * r;
+                            if (matchA[1] === matchB[1]) {
+                                return (parseInt(matchA[2]) - parseInt(matchB[2])) * r;
+                            }
                         }
                     }
                     //regular strings
