@@ -38,6 +38,7 @@ function demoObjects() {
         obj['rnd_num'] = randomInt();
         obj['rnd_bool'] = randomBool();
         obj['med_string'] = randomString(15);
+        obj['new_lines'] = `${randomString(5)}\n${randomString(5)}`;
         obj['long_string'] = randomString(50);
         obj['super_long_string'] = randomString(120);
         objects.push(obj);

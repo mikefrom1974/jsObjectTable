@@ -970,6 +970,7 @@ class ObjectTable {
                 if ((value === undefined || value === null) && this.config.hideInvalid) {
                     value = '';
                 }
+                value = `${value}`.replace(/\n/g, `<br />`);
                 if (this.config.links.hasOwnProperty(key) && !(this.config.links[key].hasOwnProperty('omit') && this.config.links[key]['omit'].includes(value))) {
                     let linkValue = value;
                     if (this.config.links[key]['keyOverride']) {
