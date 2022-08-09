@@ -64,7 +64,7 @@ class ObjectTable {
             containerID: '',
             pageNum: 1,
             allKeys: {},        //holds {'key': bool} of key order and whether to show its column
-            selected: {},       //selected[multiSelectColumn] will map a checkbox id to its value and whether it's selected
+            selected: {},       //selected[multiSelectColumn] will hold a checkbox id, value, and selected bool
                                 // i.e. {'Delete': [{'boxID': 'select.Delete.1', 'value':'mySvr1', 'selected':false}]}
             lastClickedBox: {}  //holds the last clicked checkbox for shift selecting. {'boxID': '', 'header': ''}
         }
@@ -715,6 +715,7 @@ class ObjectTable {
             const sortDesc = (this.config.sortDescend);
             const tblHead = document.createElement('th');
             tblHead.style.cssText = this.tableHeader.style.cssText;
+            tblHead.id = `th${headerTxt}`;
             if (isUID) {
                 tblHead.style.backgroundColor = this.tableColors.uidHeaderBG;
             }
@@ -999,35 +1000,36 @@ class ObjectTable {
                     const box = document.createElement('input');
                     box.type = 'checkbox';
                     box.id = `select.${hdr}.${rowCount}`;
+                    if (this.config.keyForUID) {
+                        box.id = `select.${hdr}.${value}`;
+                    }
                     this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
                     box.onclick = (e) => {
                         //check for shift held and shift select
-                        if (e.shiftKey) {
-                            if (this._controls.lastClickedBox['boxID'] && this._controls.lastClickedBox['header'] === hdr) {
-                                let index1 = -1;
-                                let index2 = -1;
-                                for (let i = 0; i < this._controls.selected[hdr].length; i++) {
-                                    const obj = this._controls.selected[hdr][i];
-                                    if (obj['boxID'] === box.id) {index2 = i}
-                                    if (obj['boxID'] === this._controls.lastClickedBox['boxID']) {index1 = i}
-                                }
-                                const box1Checked = this._controls.selected[hdr][index1]['selected'];
-                                let boxes = [];
-                                const unqValues = new Set();
-                                for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
-                                    const oSelected = this._controls.selected[hdr][i];
-                                    unqValues.add(oSelected['selected']);
-                                    const bBox = document.getElementById(oSelected['boxID']);
-                                    boxes.push(bBox);
-                                }
-                                const newBool = (unqValues.size === 1) ? !box1Checked : box1Checked;
-                                for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
-                                    const obj = this._controls.selected[hdr][i];
-                                    obj['selected'] = newBool;
-                                }
-                                for (const bBox of boxes) {
-                                    bBox.checked = newBool;
-                                }
+                        if (e.shiftKey && this._controls.lastClickedBox['boxID'] && this._controls.lastClickedBox['header'] === hdr) {
+                            let index1 = -1;
+                            let index2 = -1;
+                            for (let i = 0; i < this._controls.selected[hdr].length; i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                if (obj['boxID'] === box.id) {index2 = i}
+                                if (obj['boxID'] === this._controls.lastClickedBox['boxID']) {index1 = i}
+                            }
+                            const box1Checked = this._controls.selected[hdr][index1]['selected'];
+                            let boxes = [];
+                            const unqValues = new Set();
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const oSelected = this._controls.selected[hdr][i];
+                                unqValues.add(oSelected['selected']);
+                                const bBox = document.getElementById(oSelected['boxID']);
+                                boxes.push(bBox);
+                            }
+                            const newBool = (unqValues.size === 1) ? !box1Checked : box1Checked;
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                obj['selected'] = newBool;
+                            }
+                            for (const bBox of boxes) {
+                                bBox.checked = newBool;
                             }
                         } else {
                             //toggle box
@@ -1118,41 +1120,73 @@ class ObjectTable {
     selectHeaders() {
         let objects = [];
         for (const key in this._controls.allKeys) {
-            objects.push({'key': key});
+            objects.push({'key': key, 'up': '&uarr;', 'down': '&darr;'});
         }
         const hdrTable = new ObjectTable('selectHeaders', objects);
         hdrTable.config.captionHTML = "Select Headers<br /><small>(none = all)</small>"
         hdrTable.config.keyForUID = 'key';
-        hdrTable.config.headerOverrides = {'key': 'Header'};
+        hdrTable.config.headerOverrides = {'key': 'Header', 'up': 'Up', 'down': 'Down'};
         hdrTable.config.paginate = 0;
         hdrTable.config.hideHeaderSelect = true;
         hdrTable.config.hidePagination = true;
         hdrTable.config.showClose = true;
         hdrTable.config.funcClose = () => this.display(this._controls.containerID);
+        hdrTable.config.links = {
+            'up': {'keyOverride': 'key', 'func': (hdr) => {
+                for (let i=0; i<objects.length; i++) {
+                    if (objects[i]['key'] === hdr) {
+                        if (i === 0) {break}
+                        [objects[i], objects[i-1]] = [objects[i-1], objects[i]];
+                        [hdrTable._controls.selected['Show'][i], hdrTable._controls.selected['Show'][i-1]] = [hdrTable._controls.selected['Show'][i-1], hdrTable._controls.selected['Show'][i]];
+                        break;
+                    }
+                }
+                reDisplay();
+                }},
+            'down': {'keyOverride': 'key', 'func': (hdr) => {
+                for (let i=0; i<objects.length; i++) {
+                    if (objects[i]['key'] === hdr) {
+                        if (i === objects.length-1) {break}
+                        [objects[i], objects[i+1]] = [objects[i+1], objects[i]];
+                        [hdrTable._controls.selected['Show'][i], hdrTable._controls.selected['Show'][i+1]] = [hdrTable._controls.selected['Show'][i+1], hdrTable._controls.selected['Show'][i]];
+                        break;
+                    }
+                }
+                reDisplay();
+                }}
+        }
         hdrTable.config.multiSelect = {
             'Show': {'func': (keys) => {
-                for (const key in this._controls.allKeys) {
-                    this._controls.allKeys[key] = (keys.includes(key));
-                }
+                this.config.keysToShow = keys;
+                this._controls.allKeys = {};
                 this.display(this._controls.containerID);
             }}
         }
         hdrTable.display(this._controls.containerID);
-        let totalHeaders = 0;
-        let shownHeaders = 0;
-        for (const [boxID, obj] of Object.entries(hdrTable._controls.selected['Show'])) {
-            totalHeaders++;
-            const shown = (this._controls.allKeys[obj['value']]);
-            hdrTable._controls.selected['Show'][boxID]['selected'] = shown;
-            document.getElementById(boxID).checked = shown;
-            if (shown) {shownHeaders++}
+        for (const obj of hdrTable._controls.selected['Show']) {
+            obj['selected'] = (this._controls.allKeys[obj['value']]);
         }
-        document.getElementById('selectColumnShow').innerHTML = `(${shownHeaders})`;
-        if (shownHeaders === totalHeaders) {
-            document.getElementById('selectAllIconShow').src = hdrTable.imageSrc.selectNone;
-            document.getElementById('selectAllIconShow').alt = 'select none';
-            document.getElementById('selectAllIconShow').onclick = () => {hdrTable.selectNone('Show')};
+        const reDisplay = () => {
+            const selected = hdrTable._controls.selected;
+            hdrTable.display(this._controls.containerID);
+            hdrTable._controls.selected = selected;
+            document.getElementById('thUp').innerHTML = '';
+            document.getElementById('thDown').innerHTML = '';
+            let totalHeaders = 0;
+            let shownHeaders = 0;
+            for (const obj of hdrTable._controls.selected['Show']) {
+                totalHeaders++;
+                document.getElementById(obj['boxID']).checked = obj['selected'];
+                if (obj['selected']) {shownHeaders++}
+            }
+            document.getElementById('selectColumnShow').innerHTML = `(${shownHeaders})`;
+            if (shownHeaders === totalHeaders) {
+                document.getElementById('selectAllIconShow').src = hdrTable.imageSrc.selectNone;
+                document.getElementById('selectAllIconShow').alt = 'select none';
+                document.getElementById('selectAllIconShow').onclick = () => {hdrTable.selectNone('Show')};
+            }
         }
+        reDisplay();
     }
     //selectedCount will return the number of selected items for a given header
     selectedCount(sHdr) {
