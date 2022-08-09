@@ -416,9 +416,9 @@ class ObjectTable {
                     //identical strings ending in numbers (to avoid 1, 10 , 11 ordering)
                     const rgxNumberSfx = /(.+?)(\d+)$/;
                     const matchA = a.match(rgxNumberSfx);
-                    if (matchA.length === 3) {
+                    if (matchA && matchA.length === 3) {
                         const matchB = b.match(rgxNumberSfx);
-                        if (matchB.length === 3) {
+                        if (matchB && matchB.length === 3) {
                             if (matchA[1] === matchB[1]) {
                                 return (parseInt(matchA[2]) - parseInt(matchB[2])) * r;
                             }
@@ -971,6 +971,7 @@ class ObjectTable {
                     value = '';
                 }
                 value = `${value}`.replace(/\n/g, `<br />`);
+                value = value.replace(/\t/g, `&nbsp;&nbsp;`);
                 if (this.config.links.hasOwnProperty(key) && !(this.config.links[key].hasOwnProperty('omit') && this.config.links[key]['omit'].includes(value))) {
                     let linkValue = value;
                     if (this.config.links[key]['keyOverride']) {
