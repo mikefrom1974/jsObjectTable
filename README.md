@@ -14,6 +14,10 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
+**1.2.1**
+* *Fixed*: Undefined error in header select
+* *Added*: Reorder headers
+
 **1.1.0**
 * *Added*: Shift-click multiselect on checkbox columns
 
