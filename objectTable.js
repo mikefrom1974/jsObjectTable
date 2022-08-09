@@ -1070,7 +1070,7 @@ class ObjectTable {
             tblFootR1.style.alignItems = 'center';
             tblFootR1.style.justifyContent = this.tableCaption.style.textAlign;
             tblFootR1.style.fontSize = 'small';
-            tblFootR1.innerHTML = 'Filter returned empty set'
+            tblFootR1.innerHTML = (this.objects.length === 0) ? 'Data set is empty' : 'Filter returned empty set';
             tblFoot.appendChild(tblFootR1);
         }
         if (this.flat.filtered.length > 0) {
@@ -1343,7 +1343,7 @@ class ObjectTable {
                 console.error(`t.config.keysToShow is not an array of strings (empty is ok)`);
             }
             for (const key of this.config.keysToShow) {
-                if (!allKeys.has(key)) {
+                if (!allKeys.has(key) && this.objects.length > 0) {
                     fail += 1;
                     console.error(`specified key ${key} is not a key in the provided objects`);
                 }
