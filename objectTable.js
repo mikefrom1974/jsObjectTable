@@ -463,7 +463,14 @@ class ObjectTable {
                 totalPages++;
             }
         }
-        const containerWidth = window.getComputedStyle(container).width;
+        let containerWidth = window.getComputedStyle(container).width;
+        let parent = container;
+        while (containerWidth === '0px') {
+            parent = parent.parentElement;
+            if (!parent) {break}
+            containerWidth = window.getComputedStyle(parent).width;
+        }
+        if (containerWidth === '0') {containerWidth = '100%'}
         //set 'before' bg colors for hover highlighting
         const defBG = window.getComputedStyle(container).backgroundColor;
         if (!this.tableColors.trEvenBG) {

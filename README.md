@@ -16,6 +16,7 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 
 **dev**
 * *Fixed*: pagination and header controls not showing
+* *Fixed*: zero px container width mis-aligning caption
 
 **1.2.5**
 * *Fixed*: sorting issues
