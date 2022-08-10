@@ -578,7 +578,7 @@ class ObjectTable {
         tblCapR1.appendChild(closeImg);
         tblCapDiv.appendChild(tblCapR1);
 
-        if (!this.config.hideHeaderSelect && !this.config.hidePagination) {
+        if (!this.config.hideHeaderSelect || !this.config.hidePagination) {
             const tblCapR2 = document.createElement('div');
             tblCapR2.style.display = 'flex';
             tblCapR2.style.flexDirection = 'row';

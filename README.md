@@ -14,6 +14,14 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
+**dev**
+* *Fixed*: pagination and header controls not showing
+
+**1.2.5**
+* *Fixed*: sorting issues
+* *Fixed*: empty sets from source throwing errors
+* *fixed*: td newlines and tabs not showing properly
+
 **1.2.1**
 * *Fixed*: Undefined error in header select
 * *Added*: Reorder headers
@@ -28,4 +36,3 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## ToDo:
 * settings cog to change colors / style
 * default color schemes (dark mode)
-* allow reordering headers by dragging rows
