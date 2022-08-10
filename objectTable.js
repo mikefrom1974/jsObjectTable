@@ -509,37 +509,33 @@ class ObjectTable {
         tblCapR1.style.alignItems = 'center';
         tblCapR1.style.justifyContent = this.tableCaption.style.textAlign;
 
-        const refreshImg = document.createElement('img');
-        refreshImg.style.cssText = this.tableImage.style.cssText;
-        refreshImg.style.paddingLeft = this.tablePadding.left;
-        refreshImg.style.paddingRight = this.tablePadding.right;
-        refreshImg.src = this.imageSrc.refresh;
-        refreshImg.alt = 'repopulate table';
         if (this.config.showRefresh) {
+            const refreshImg = document.createElement('img');
+            refreshImg.style.cssText = this.tableImage.style.cssText;
+            refreshImg.style.paddingLeft = this.tablePadding.left;
+            refreshImg.style.paddingRight = this.tablePadding.right;
+            refreshImg.src = this.imageSrc.refresh;
+            refreshImg.alt = 'repopulate table';
             refreshImg.style.cursor = 'pointer';
             refreshImg.onclick = this.config.funcRefresh;
             refreshImg.onmouseover = (e) => {this.toolTip.show(e, 'repopulate table from source')};
             refreshImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            refreshImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(refreshImg);
         }
-        tblCapR1.appendChild(refreshImg);
 
-        const csvImg = document.createElement('img');
-        csvImg.style.cssText = this.tableImage.style.cssText;
-        csvImg.style.paddingLeft = this.tablePadding.left;
-        csvImg.style.paddingRight = this.tablePadding.right;
-        csvImg.src = this.imageSrc.csv;
-        csvImg.alt = 'download CSV';
         if (this.config.showCSV) {
+            const csvImg = document.createElement('img');
+            csvImg.style.cssText = this.tableImage.style.cssText;
+            csvImg.style.paddingLeft = this.tablePadding.left;
+            csvImg.style.paddingRight = this.tablePadding.right;
+            csvImg.src = this.imageSrc.csv;
+            csvImg.alt = 'download CSV';
             csvImg.style.cursor = 'pointer';
             csvImg.onclick = () => this.downloadCSV();
             csvImg.onmouseover = (e) => {this.toolTip.show(e, 'download CSV file')};
             csvImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            csvImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(csvImg);
         }
-        tblCapR1.appendChild(csvImg);
 
         const capHTML = document.createElement('div');
         capHTML.style.display = 'flex';
@@ -552,37 +548,33 @@ class ObjectTable {
         capHTML.appendChild(capInnerDiv);
         tblCapR1.appendChild(capHTML);
 
-        const addImg = document.createElement('img');
-        addImg.style.cssText = this.tableImage.style.cssText;
-        addImg.style.paddingLeft = this.tablePadding.left;
-        addImg.style.paddingRight = this.tablePadding.right;
-        addImg.src = this.imageSrc.add;
-        addImg.alt = 'add new';
         if (this.config.showAdd) {
+            const addImg = document.createElement('img');
+            addImg.style.cssText = this.tableImage.style.cssText;
+            addImg.style.paddingLeft = this.tablePadding.left;
+            addImg.style.paddingRight = this.tablePadding.right;
+            addImg.src = this.imageSrc.add;
+            addImg.alt = 'add new';
             addImg.style.cursor = 'pointer';
             addImg.onclick = this.config.funcAdd;
             addImg.onmouseover = (e) => {this.toolTip.show(e, 'add new object to source')};
             addImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            addImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(addImg);
         }
-        tblCapR1.appendChild(addImg);
 
-        const closeImg = document.createElement('img');
-        closeImg.style.cssText = this.tableImage.style.cssText;
-        closeImg.style.paddingLeft = this.tablePadding.left;
-        closeImg.style.paddingRight = this.tablePadding.right;
-        closeImg.src = this.imageSrc.close;
-        closeImg.alt = 'close table';
         if (this.config.showClose) {
+            const closeImg = document.createElement('img');
+            closeImg.style.cssText = this.tableImage.style.cssText;
+            closeImg.style.paddingLeft = this.tablePadding.left;
+            closeImg.style.paddingRight = this.tablePadding.right;
+            closeImg.src = this.imageSrc.close;
+            closeImg.alt = 'close table';
             closeImg.style.cursor = 'pointer';
             closeImg.onclick = this.config.funcClose;
             closeImg.onmouseover = (e) => {this.toolTip.show(e, 'close table')};
             closeImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            closeImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(closeImg);
         }
-        tblCapR1.appendChild(closeImg);
         tblCapDiv.appendChild(tblCapR1);
 
         if (!this.config.hideHeaderSelect || !this.config.hidePagination) {
@@ -1082,7 +1074,7 @@ class ObjectTable {
             tblFootR1.innerHTML = (this.objects.length === 0) ? 'Data set is empty' : 'Filter returned empty set';
             tblFoot.appendChild(tblFootR1);
         }
-        if (this.flat.filtered.length > 0) {
+        if (this.flat.filtered.length > 0 && !this.config.hidePagination) {
             const tblFootR2 = document.createElement('div');
             tblFootR2.style.cssText = this.tableFooter.style.cssText;
             tblFootR2.style.display = 'flex';
