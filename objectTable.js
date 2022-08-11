@@ -1384,25 +1384,74 @@ class ObjectTable {
                 fail += 1;
                 console.error(`no object keys could be found in the provided objects`);
             }
+            //check other elements that rely on objects > 0
+            if (!this.isObject(this.config.headerOverrides)) {
+                fail += 1;
+                console.error(`t.config.headerOverrides is not an object`);
+            } else {
+                for (const [key, value] of Object.entries(this.config.headerOverrides)) {
+                    if (!this.isString(value)) {
+                        fail += 1;
+                        console.error(`t.config.headerOverrides[${key}] is not a string`);
+                    } else if (!this._controls.allKeys.hasOwnProperty(key)) {
+                        fail += 1;
+                        console.error(`t.config.headerOverrides[${key}] is not a key in the provided objects`);
+                    }
+                }
+            }
+            for (const key of this.config.showFilterFor) {
+                if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
+                    fail += 1;
+                    console.error(`specified key ${key} is not a key in the provided objects`);
+                }
+            }
+            if (!this.isObject(this.config.filterValues)) {
+                fail += 1;
+                console.error(`t.config.filterValues is not an object`);
+            } else {
+                for (const [hdr, value] of Object.entries(this.config.filterValues)) {
+                    if (!(this.config.showFilterFor.includes(hdr) || this.config.showFilterFor.includes('*'))) {
+                        fail += 1;
+                        console.error(`filtered key ${hdr} is not marked in showFilterFor (won't be able to change filter)`);
+                    }
+                    if (!this.isString(value)) {
+                        fail += 1;
+                        console.error(`t.config.filterValues[${hdr}] is not a string`);
+                    } else if (!this._controls.allKeys.hasOwnProperty(hdr)) {
+                        fail += 1;
+                        console.error(`t.config.filterValues[${hdr}] is not a key in the provided objects`);
+                    }
+                }
+            }
+            if (!this.isArray(this.config.showSortFor) || (this.config.showSortFor.length > 0 && !this.isString(this.config.showSortFor[0]))) {
+                fail += 1;
+                console.error(`t.config.showSortFor is not an array of strings (empty is ok)`);
+            }
+            for (const key of this.config.showSortFor) {
+                if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
+                    fail += 1;
+                    console.error(`specified key ${key} is not a key in the provided objects`);
+                }
+            }
+            if (!this.isString(this.config.keyToSort)) {
+                fail += 1;
+                console.error(`t.config.keyToSort is not a string (empty is ok)`);
+            }
+            if (this.config.keyToSort && !this.config.keyToSort in this._controls.allKeys) {
+                fail += 1;
+                console.error(`t.config.keyToSort is not is not a key in the provided objects`);
+            }
+            for (const key of this.config.applyImagesTo) {
+                if (!this._controls.allKeys.hasOwnProperty(key)) {
+                    fail += 1;
+                    console.error(`specified key ${key} is not a key in the provided objects`);
+                }
+            }
         }
         //check config elements
         if (!this.isString(this.config.keyForUID)) {
             fail += 1;
             console.error(`t.config.keyForUID is not a string`);
-        }
-        if (!this.isObject(this.config.headerOverrides)) {
-            fail += 1;
-            console.error(`t.config.headerOverrides is not an object`);
-        } else {
-            for (const [key, value] of Object.entries(this.config.headerOverrides)) {
-                if (!this.isString(value)) {
-                    fail += 1;
-                    console.error(`t.config.headerOverrides[${key}] is not a string`);
-                } else if (!this._controls.allKeys.hasOwnProperty(key)) {
-                    fail += 1;
-                    console.error(`t.config.headerOverrides[${key}] is not a key in the provided objects`);
-                }
-            }
         }
         if (!this.isString(this.config.captionHTML) || this.config.captionHTML === '') {
             fail += 1;
@@ -1439,48 +1488,6 @@ class ObjectTable {
         if (!this.isArray(this.config.showFilterFor) || (this.config.showFilterFor.length > 0 && !this.isString(this.config.showFilterFor[0]))) {
             fail += 1;
             console.error(`t.config.showFilterFor is not an array of strings (empty is ok)`);
-        }
-        for (const key of this.config.showFilterFor) {
-            if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
-        }
-        if (!this.isObject(this.config.filterValues)) {
-            fail += 1;
-            console.error(`t.config.filterValues is not an object`);
-        } else {
-            for (const [hdr, value] of Object.entries(this.config.filterValues)) {
-                if (!(this.config.showFilterFor.includes(hdr) || this.config.showFilterFor.includes('*'))) {
-                    fail += 1;
-                    console.error(`filtered key ${hdr} is not marked in showFilterFor (won't be able to change filter)`);
-                }
-                if (!this.isString(value)) {
-                    fail += 1;
-                    console.error(`t.config.filterValues[${hdr}] is not a string`);
-                } else if (!this._controls.allKeys.hasOwnProperty(hdr)) {
-                    fail += 1;
-                    console.error(`t.config.filterValues[${hdr}] is not a key in the provided objects`);
-                }
-            }
-        }
-        if (!this.isArray(this.config.showSortFor) || (this.config.showSortFor.length > 0 && !this.isString(this.config.showSortFor[0]))) {
-            fail += 1;
-            console.error(`t.config.showSortFor is not an array of strings (empty is ok)`);
-        }
-        for (const key of this.config.showSortFor) {
-            if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
-        }
-        if (!this.isString(this.config.keyToSort)) {
-            fail += 1;
-            console.error(`t.config.keyToSort is not a string (empty is ok)`);
-        }
-        if (this.config.keyToSort && !this.config.keyToSort in this._controls.allKeys) {
-            fail += 1;
-            console.error(`t.config.keyToSort is not is not a key in the provided objects`);
         }
         if (!this.isBoolean(this.config.sortDescend)) {
             fail += 1;
@@ -1559,12 +1566,6 @@ class ObjectTable {
         if (!this.isArray(this.config.applyImagesTo) || (this.config.applyImagesTo.length > 0 && !this.isString(this.config.applyImagesTo[0]))) {
             fail += 1;
             console.error(`t.config.applyImagesTo is not an array of strings (empty is ok)`);
-        }
-        for (const key of this.config.applyImagesTo) {
-            if (!this._controls.allKeys.hasOwnProperty(key)) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
         }
         if (fail > 0) {
             let msg = `${fail} ${(fail===1)?'error':'errors'} prevented verification. See console for details`;
