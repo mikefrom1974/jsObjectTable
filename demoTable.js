@@ -7,6 +7,11 @@ function showDemoTable() {
         'id': 'Object',
         'ip': 'IP Address'
     }
+    t.config.headerLinks['short_string'] = () => {
+        alert('this function should do something with the short_string column, in this case we will just hide it');
+        t._controls.allKeys['short_string'] = false;
+        t.display(t._controls.containerID);
+    }
     t.config.showRefresh = true;
     t.config.funcRefresh = showDemoTable;
     t.config.showCSV = true;
