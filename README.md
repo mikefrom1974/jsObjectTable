@@ -18,6 +18,9 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 * *Fixed*: pagination and header controls not showing
 * *Fixed*: zero px container width mis-aligning caption
 * *Fixed*: hiding pagination didn't hide pagination footer
+* *Fixed*: some table settings not taking effect
+* *Fixed*: false 'missing key' error on empty sets
+* *Changed*: main table rows now have IDs for post-processing
 * *Changed*: caption images no longer take up space when hidden
 
 **1.2.5**

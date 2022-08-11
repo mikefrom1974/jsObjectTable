@@ -161,6 +161,15 @@ class ObjectTable {
                 this.toolTip.container.style.left = '0px';
             }
         }
+        //hold our filtered and sorted object array
+        this.flat = {
+            all: [],
+            filtered: [],
+            page: []
+        }
+    }
+    //createTemplates will create a template for each table element. That cssText will be copied to new instances
+    createTemplates() {
         this.table = document.createElement('table'); //style template for the table
         this.table.style.display = 'inline-block';
         this.table.style.width = 'auto';
@@ -237,12 +246,6 @@ class ObjectTable {
         this.tableImage.style.paddingTop = '0px';
         this.tableImage.style.paddingBottom = '0px';
         this.tableImage.style.alignSelf = 'center';
-        //hold our filtered and sorted object array
-        this.flat = {
-            all: [],
-            filtered: [],
-            page: []
-        }
     }
     //flatten will take in an object and return an object with any sub-objects flattened; called in filter()
     // note: flatten will also convert arrays to comma-separated strings
@@ -450,6 +453,7 @@ class ObjectTable {
         if (this.config.keyToSort) {
             this.sort(this.config.keyToSort, this.config.sortDescend);
         }
+        this.createTemplates();
         const totalKeys = Object.keys(this._controls.allKeys).length;
         let shownKeys = 0;
         for (const display of Object.values(this._controls.allKeys)) {
@@ -498,10 +502,12 @@ class ObjectTable {
         //add caption (top row: refresh > csv > caption > add > close; bottom row: header / page info)
         const tblCap = document.createElement('caption');
         tblCap.style.cssText = this.tableCaption.style.cssText;
+        tblCap.id = `${this.name}_Caption`;
         const tblCapDiv = document.createElement('div');
         tblCapDiv.style.flexDirection = 'column';
         tblCapDiv.style.alignItems = 'center';
         const tblCapR1 = document.createElement('div');
+        tblCapR1.id = `${this.name}_Caption_R1`;
         tblCapR1.style.display = 'flex';
         tblCapR1.style.flexDirection = 'row';
         tblCapR1.style.width = '100%';
@@ -579,6 +585,7 @@ class ObjectTable {
 
         if (!this.config.hideHeaderSelect || !this.config.hidePagination) {
             const tblCapR2 = document.createElement('div');
+            tblCapR2.id = `${this.name}_Caption_R2`;
             tblCapR2.style.display = 'flex';
             tblCapR2.style.flexDirection = 'row';
             tblCapR2.style.width = '100%';
@@ -588,81 +595,88 @@ class ObjectTable {
             tblCapR2.style.fontWeight = 'normal';
             tblCapR2.style.fontSize = 'small';
 
-            if (!this.config.hidePagination && this.flat.filtered.length > 0) {
+            if (!this.config.hidePagination) {
                 const pageControl = document.createElement('div');
                 pageControl.style.display = 'flex';
                 pageControl.style.flexDirection = 'row';
                 pageControl.style.flexGrow = '1';
                 pageControl.style.justifyContent = 'left';
                 pageControl.style.paddingRight = this.tablePadding.innerCaptionSides;
-                if (this.config.paginate > 0) {
-                    const firstPage = document.createElement('a');
-                    firstPage.style.color = '#cccccc';
-                    firstPage.innerHTML = '&lt;&lt;';
-                    if (!(this._controls.pageNum < 2)) {
-                        firstPage.href = '#';
-                        firstPage.style.color = this.tableColors.clickColor;
-                        firstPage.onclick = () => {
-                            this._controls.pageNum = 1;
-                            this.display(this._controls.containerID);
+                if (totalPages > 1) {
+                    if (this.config.paginate > 0) {
+                        const firstPage = document.createElement('a');
+                        firstPage.style.color = '#cccccc';
+                        firstPage.innerHTML = '&lt;&lt;';
+                        if (!(this._controls.pageNum < 2)) {
+                            firstPage.href = '#';
+                            firstPage.style.color = this.tableColors.clickColor;
+                            firstPage.onclick = () => {
+                                this._controls.pageNum = 1;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(firstPage);
-                    const prevPage = document.createElement('a');
-                    prevPage.style.paddingLeft = this.tablePadding.paginator;
-                    prevPage.style.color = '#cccccc';
-                    prevPage.innerHTML = '&lt;';
-                    if (!(this._controls.pageNum < 2)) {
-                        prevPage.href = '#';
-                        prevPage.style.color = this.tableColors.clickColor;
-                        prevPage.onclick = () => {
-                            this._controls.pageNum--;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(firstPage);
+                        const prevPage = document.createElement('a');
+                        prevPage.style.paddingLeft = this.tablePadding.paginator;
+                        prevPage.style.color = '#cccccc';
+                        prevPage.innerHTML = '&lt;';
+                        if (!(this._controls.pageNum < 2)) {
+                            prevPage.href = '#';
+                            prevPage.style.color = this.tableColors.clickColor;
+                            prevPage.onclick = () => {
+                                this._controls.pageNum--;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(prevPage);
-                    const pageNum = document.createElement('a');
-                    pageNum.style.paddingLeft = this.tablePadding.paginator;
-                    pageNum.href = '#';
-                    pageNum.style.color = this.tableColors.clickColor;
-                    pageNum.innerHTML = `${this._controls.pageNum}`;
-                    pageNum.onclick = () => {
-                        const value = parseInt(prompt('Page Number:'));
-                        if (this.isNumber(value)) {
-                            this._controls.pageNum = value;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(prevPage);
+                        const pageNum = document.createElement('a');
+                        pageNum.style.paddingLeft = this.tablePadding.paginator;
+                        pageNum.href = '#';
+                        pageNum.style.color = this.tableColors.clickColor;
+                        pageNum.innerHTML = `${this._controls.pageNum}`;
+                        pageNum.onclick = () => {
+                            const value = parseInt(prompt('Page Number:'));
+                            if (this.isNumber(value)) {
+                                this._controls.pageNum = value;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(pageNum);
-                    const pageTotal = document.createElement('a');
-                    pageTotal.innerHTML = `/${totalPages}`;
-                    pageControl.appendChild(pageTotal);
-                    const nextPage = document.createElement('a');
-                    nextPage.style.paddingLeft = this.tablePadding.paginator;
-                    nextPage.style.color = '#cccccc';
-                    nextPage.innerHTML = '&gt;';
-                    if (this._controls.pageNum < totalPages) {
-                        nextPage.href = '#';
-                        nextPage.style.color = this.tableColors.clickColor;
-                        nextPage.onclick = () => {
-                            this._controls.pageNum++;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(pageNum);
+                        const pageTotal = document.createElement('a');
+                        pageTotal.innerHTML = `/${totalPages}`;
+                        pageControl.appendChild(pageTotal);
+                        const nextPage = document.createElement('a');
+                        nextPage.style.paddingLeft = this.tablePadding.paginator;
+                        nextPage.style.color = '#cccccc';
+                        nextPage.innerHTML = '&gt;';
+                        if (this._controls.pageNum < totalPages) {
+                            nextPage.href = '#';
+                            nextPage.style.color = this.tableColors.clickColor;
+                            nextPage.onclick = () => {
+                                this._controls.pageNum++;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(nextPage);
-                    const lastPage = document.createElement('a');
-                    lastPage.style.paddingLeft = this.tablePadding.paginator;
-                    lastPage.style.color = '#cccccc';
-                    lastPage.innerHTML = '&gt;&gt;';
-                    if (this._controls.pageNum < totalPages) {
-                        lastPage.href = '#';
-                        lastPage.style.color = this.tableColors.clickColor;
-                        lastPage.onclick = () => {
-                            this._controls.pageNum = totalPages;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(nextPage);
+                        const lastPage = document.createElement('a');
+                        lastPage.style.paddingLeft = this.tablePadding.paginator;
+                        lastPage.style.color = '#cccccc';
+                        lastPage.innerHTML = '&gt;&gt;';
+                        if (this._controls.pageNum < totalPages) {
+                            lastPage.href = '#';
+                            lastPage.style.color = this.tableColors.clickColor;
+                            lastPage.onclick = () => {
+                                this._controls.pageNum = totalPages;
+                                this.display(this._controls.containerID);
+                            }
                         }
+                        pageControl.appendChild(lastPage);
                     }
-                    pageControl.appendChild(lastPage);
+                } else {
+                    const placeHolder = document.createElement('a');
+                    placeHolder.style.color = '#cccccc';
+                    placeHolder.innerHTML = `&lt;1&gt;`;
+                    pageControl.appendChild(placeHolder);
                 }
                 tblCapR2.appendChild(pageControl);
             }
@@ -696,6 +710,7 @@ class ObjectTable {
         //add headers
         let colCount = 0;
         const hdrRow = document.createElement('tr')
+        hdrRow.id = `${this.name}_Header`;
         hdrRow.style.cssText = this.tableRow.style.cssText;
 
         for (const [key, display] of Object.entries(this._controls.allKeys)) {
@@ -938,6 +953,7 @@ class ObjectTable {
             const obj = this.flat.filtered[i];
             this.flat.page.push(obj);
             const tblRow = document.createElement('tr');
+            tblRow.id = `${this.name}_Row_${rowCount}`;
             tblRow.style.cssText = this.tableRow.style.cssText;
             if (rowCount % 2 === 0) {
                 if (this.tableColors.trEvenBG) {
@@ -1058,6 +1074,7 @@ class ObjectTable {
         }
         //add footer
         const tfRow = document.createElement('tr');
+        tfRow.id = `${this.name}_Footer`;
         tfRow.style.cssText = '';
         const tblFoot = document.createElement('td');
         tblFoot.colSpan = colCount;
@@ -1330,7 +1347,7 @@ class ObjectTable {
             }
         }
         //populate order of keys and whether to show their columns
-        if (Object.keys(this._controls.allKeys).length === 0) {
+        if (Object.keys(this._controls.allKeys).length === 0 && this.objects.length > 0) {
             //get all keys from objects array
             const allKeys = new Set();
             for (const object of this.objects) {
@@ -1344,7 +1361,7 @@ class ObjectTable {
                 console.error(`t.config.keysToShow is not an array of strings (empty is ok)`);
             }
             for (const key of this.config.keysToShow) {
-                if (!allKeys.has(key) && this.objects.length > 0) {
+                if (!allKeys.has(key)) {
                     fail += 1;
                     console.error(`specified key ${key} is not a key in the provided objects`);
                 }
@@ -1362,10 +1379,11 @@ class ObjectTable {
                     this._controls.allKeys[key] = !predefined;
                 }
             }
-        }
-        if (Object.keys(this._controls.allKeys).length === 0) {
-            fail += 1;
-            console.error(`no object keys could be found in the provided objects`);
+            //make sure we found some keys
+            if (Object.keys(this._controls.allKeys).length === 0) {
+                fail += 1;
+                console.error(`no object keys could be found in the provided objects`);
+            }
         }
         //check config elements
         if (!this.isString(this.config.keyForUID)) {
