@@ -49,11 +49,12 @@ class ObjectTable {
                                                 // i.e. {'exampleKey': 'func': myFunc}
                                                 // function should take string arg (will always be key name)
             multiSelect: {},                    //object: map of header names to multiselect functions
-                                                // i.e. {'Delete': {'func': myFunc, 'keyOverride': 'exampleKey', 'omit': []}
+                                                // i.e. {'Delete': {'func': myFunc, 'keyOverride': 'exampleKey', 'omit': [], before: false}
                                                 // column will be populated with checkboxes, header should NOT be in keys
                                                 // function should take array of strings
                                                 // keyOverride specifies the column values to bind (blank = UID key)
                                                 // any values in omit will not have checkboxes
+                                                // setting before to true will place the select column on the left
             hideInvalid: false,                 //bool: show blank cell instead of 'null' or 'undefined'
             htmlTrue: '&#10004;',               //string: replace true boolean with checkmark, etc
             htmlFalse: '',                      //string: replace false boolean with HTML symbol
@@ -136,6 +137,7 @@ class ObjectTable {
                 this.toolTip.container.style.left = '0px';
                 this.toolTip.container.style.opacity = '0';
                 this.toolTip.container.style.transition = 'opacity .2s ease-in';
+                if (this.toolTip.timer) {clearTimeout(this.toolTip.timer)}
             },
             delayMS: 400,
             posX: 0,
@@ -716,6 +718,87 @@ class ObjectTable {
         hdrRow.id = `${this.name}_Header`;
         hdrRow.style.cssText = this.tableRow.style.cssText;
 
+        this._controls.selected = {};
+        //add left multiSelect headers
+        for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+            if (!hdrObj['before']) {continue}
+            const headerTxt = hdr;
+            this._controls.selected[hdr] = [];
+
+            const tblHead = document.createElement('th');
+            tblHead.style.cssText = this.tableHeader.style.cssText;
+
+            const thDiv = document.createElement('div');
+            thDiv.style.display = 'flex';
+            thDiv.style.flexDirection = 'column';
+            thDiv.style.alignItems = 'center';
+
+            const thR1 = document.createElement('div');
+            thR1.style.display = 'flex';
+            thR1.style.width = '100%';
+            thR1.style.flexDirection = 'row';
+            thR1.style.justifyContent = 'center';
+            const selectClick = document.createElement('a');
+            selectClick.innerHTML = headerTxt;
+            selectClick.href = '#';
+            selectClick.style.color = this.tableColors.clickColor;
+            selectClick.onclick = () => {
+                let ary = [];
+                for (const obj of this._controls.selected[hdr]) {
+                    if (obj['selected']) {
+                        ary.push(obj['value']);
+                    }
+                }
+                hdrObj['func'](ary);
+            }
+            thR1.appendChild(selectClick);
+            thDiv.appendChild(thR1);
+
+            const thR2 = document.createElement('div');
+            thR2.style.display = 'flex';
+            thR2.style.width = '100%';
+            thR2.style.flexDirection = 'row';
+            thR2.style.justifyContent = 'center';
+            thR2.style.paddingTop = this.tablePadding.innerColumnTop;
+            const invertIcon = document.createElement('img')
+            invertIcon.style.cssText = this.tableImage.style.cssText;
+            invertIcon.src = this.imageSrc.selectInverse;
+            invertIcon.alt = 'select inverse';
+            invertIcon.style.cursor = 'pointer';
+            invertIcon.onclick = () => {
+                for (const obj of this._controls.selected[hdr]) {
+                    obj['selected'] = !obj['selected'];
+                    document.getElementById(obj['boxID']).checked = obj['selected'];
+                }
+                document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+            }
+            invertIcon.onmouseover = (e) => {this.toolTip.show(e, 'invert selection')};
+            invertIcon.onmouseout = () => {this.toolTip.hide()};
+            thR2.appendChild(invertIcon);
+            const selectCount = document.createElement('div');
+            selectCount.id = `selectColumn${hdr}`;
+            selectCount.style.display = 'flex';
+            selectCount.style.justifyContent = 'center';
+            selectCount.style.flexGrow = '1';
+            selectCount.innerHTML = `(${this.selectedCount(hdr)})`;
+            thR2.appendChild(selectCount);
+            const selectAllIcon = document.createElement('img');
+            selectAllIcon.id = `selectAllIcon${hdr}`;
+            selectAllIcon.style.cssText = this.tableImage.style.cssText;
+            selectAllIcon.style.cursor = 'pointer';
+            selectAllIcon.src = this.imageSrc.selectAll;
+            selectAllIcon.alt = 'select all';
+            selectAllIcon.onclick = () => {this.selectAll(hdr)};
+            selectAllIcon.onmouseover = (e) => {this.toolTip.show(e, 'select all')};
+            selectAllIcon.onmouseout = () => {this.toolTip.hide()};
+            thR2.appendChild(selectAllIcon);
+            thDiv.appendChild(thR2);
+            tblHead.appendChild(thDiv);
+            hdrRow.appendChild(tblHead);
+            colCount++;
+        }
+
+        //add object headers
         for (const [key, display] of Object.entries(this._controls.allKeys)) {
             if (!display) {continue}
             const headerTxt = (this.config.headerOverrides.hasOwnProperty(key)) ? this.config.headerOverrides[key] : key;
@@ -871,9 +954,9 @@ class ObjectTable {
             hdrRow.appendChild(tblHead);
             colCount++;
         }
-        this._controls.selected = {};
-        //add multiSelect headers
-        for (const hdr in this.config.multiSelect) {
+        //add right multiSelect headers
+        for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+            if (hdrObj['before']) {continue}
             const headerTxt = hdr;
             this._controls.selected[hdr] = [];
 
@@ -901,7 +984,7 @@ class ObjectTable {
                         ary.push(obj['value']);
                     }
                 }
-                this.config.multiSelect[hdr]['func'](ary);
+                hdrObj['func'](ary);
             }
             thR1.appendChild(selectClick);
             thDiv.appendChild(thR1);
@@ -981,6 +1064,73 @@ class ObjectTable {
                 tblRow.onmouseover = () => {tblRow.style.backgroundColor = this.tableColors.trHoverBG}
                 tblRow.onmouseout = () => {tblRow.style.backgroundColor = ogBG}
             }
+
+            //left multiselect checkBoxes
+            for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+                if (!hdrObj['before']) {continue}
+                let valueKey = hdrObj['keyOverride'];
+                let value = (valueKey) ? obj[valueKey] : obj[this.config.keyForUID];
+                const tblData = document.createElement('td');
+                tblData.style.cssText = this.tableData.style.cssText;
+                if (!(hdrObj.hasOwnProperty('omit') && hdrObj['omit'].includes(value))) {
+                    const boxDiv = document.createElement('div');
+                    boxDiv.style.display = 'flex';
+                    boxDiv.style.flexDirection = 'row';
+                    boxDiv.style.width = '100%';
+                    boxDiv.style.alignItems = 'center';
+                    boxDiv.style.justifyContent = 'center';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.id = `select.${hdr}.${rowCount}`;
+                    if (this.config.keyForUID) {
+                        box.id = `select.${hdr}.${value}`;
+                    }
+                    this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
+                    box.onclick = (e) => {
+                        //check for shift held and shift select
+                        if (e.shiftKey && this._controls.lastClickedBox['boxID'] && this._controls.lastClickedBox['header'] === hdr) {
+                            let index1 = -1;
+                            let index2 = -1;
+                            for (let i = 0; i < this._controls.selected[hdr].length; i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                if (obj['boxID'] === box.id) {index2 = i}
+                                if (obj['boxID'] === this._controls.lastClickedBox['boxID']) {index1 = i}
+                            }
+                            const box1Checked = this._controls.selected[hdr][index1]['selected'];
+                            let boxes = [];
+                            const unqValues = new Set();
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const oSelected = this._controls.selected[hdr][i];
+                                unqValues.add(oSelected['selected']);
+                                const bBox = document.getElementById(oSelected['boxID']);
+                                boxes.push(bBox);
+                            }
+                            const newBool = (unqValues.size === 1) ? !box1Checked : box1Checked;
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                obj['selected'] = newBool;
+                            }
+                            for (const bBox of boxes) {
+                                bBox.checked = newBool;
+                            }
+                        } else {
+                            //toggle box
+                            this._controls.lastClickedBox = {'boxID': box.id, 'header': hdr};
+                            for (const obj of this._controls.selected[hdr]) {
+                                if (obj['boxID'] === box.id) {
+                                    obj['selected'] = box.checked;
+                                    break;
+                                }
+                            }
+                        }
+                        document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                    }
+                    boxDiv.appendChild(box);
+                    tblData.appendChild(boxDiv);
+                }
+                tblRow.appendChild(tblData);
+            }
+
             //values
             for (const [key, display] of Object.entries(this._controls.allKeys)) {
                 if (!display) {continue}
@@ -1015,13 +1165,14 @@ class ObjectTable {
                 }
                 tblRow.appendChild(tblData);
             }
-            //multiselect
-            for (const hdr in this.config.multiSelect) {
-                let valueKey = this.config.multiSelect[hdr]['keyOverride'];
+            //right multiselect checkBoxes
+            for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+                if (hdrObj['before']) {continue}
+                let valueKey = hdrObj['keyOverride'];
                 let value = (valueKey) ? obj[valueKey] : obj[this.config.keyForUID];
                 const tblData = document.createElement('td');
                 tblData.style.cssText = this.tableData.style.cssText;
-                if (!(this.config.multiSelect[hdr].hasOwnProperty('omit') && this.config.multiSelect[hdr]['omit'].includes(value))) {
+                if (!(hdrObj.hasOwnProperty('omit') && hdrObj['omit'].includes(value))) {
                     const boxDiv = document.createElement('div');
                     boxDiv.style.display = 'flex';
                     boxDiv.style.flexDirection = 'row';

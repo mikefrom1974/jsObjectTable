@@ -14,7 +14,7 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
-**dev**
+**1.3.0**
 * *Fixed*: pagination and header controls not showing
 * *Fixed*: various layout issues
 * *Fixed*: hiding pagination didn't hide pagination footer
@@ -23,6 +23,7 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 * *Changed*: main table rows now have IDs for post-processing
 * *Changed*: caption images no longer take up space when hidden
 * *Added*: header link functions
+* *Added*: ability to show multiSelect headers before object headers
 
 **1.2.5**
 * *Fixed*: sorting issues

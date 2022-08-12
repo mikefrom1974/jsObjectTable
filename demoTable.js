@@ -26,7 +26,7 @@ function showDemoTable() {
         'id': {'func': demoShow, 'omit': ['object_0']}
     }
     t.config.multiSelect = {
-        'Delete': {'func': demoDelete, 'omit': ['object_0']},
+        'Delete': {'func': demoDelete, 'omit': ['object_0'], 'before': true},
         'Ping': {'func': demoPing, 'keyOverride': 'ip'}
     }
     t.config.paginate = 20;
