@@ -40,17 +40,21 @@ class ObjectTable {
                                                 // use ['*'] to show sort for all keys
             keyToSort: '',                      //string: current sorted key
             sortDescend: false,                 //bool: sort in reverse order
-            links: {},                          //object: map of keys to bind functions to
+            links: {},                          //object: map of keys to bind functions to in the values column
                                                 // i.e. {'exampleKey': {'func': myFunc, 'keyOverride': 'id', 'omit': []}
                                                 // function should take string arg
                                                 // keyOverride specifies the column value to bind (blank = this key)
                                                 // any values in omit will not have links applied
+            headerLinks: {},                    //object: map of keys to bind functions to in the header field
+                                                // i.e. {'exampleKey': 'func': myFunc}
+                                                // function should take string arg (will always be key name)
             multiSelect: {},                    //object: map of header names to multiselect functions
-                                                // i.e. {'Delete': {'func': myFunc, 'keyOverride': 'exampleKey', 'omit': []}
+                                                // i.e. {'Delete': {'func': myFunc, 'keyOverride': 'exampleKey', 'omit': [], before: false}
                                                 // column will be populated with checkboxes, header should NOT be in keys
                                                 // function should take array of strings
                                                 // keyOverride specifies the column values to bind (blank = UID key)
                                                 // any values in omit will not have checkboxes
+                                                // setting before to true will place the select column on the left
             hideInvalid: false,                 //bool: show blank cell instead of 'null' or 'undefined'
             htmlTrue: '&#10004;',               //string: replace true boolean with checkmark, etc
             htmlFalse: '',                      //string: replace false boolean with HTML symbol
@@ -133,6 +137,7 @@ class ObjectTable {
                 this.toolTip.container.style.left = '0px';
                 this.toolTip.container.style.opacity = '0';
                 this.toolTip.container.style.transition = 'opacity .2s ease-in';
+                if (this.toolTip.timer) {clearTimeout(this.toolTip.timer)}
             },
             delayMS: 400,
             posX: 0,
@@ -161,6 +166,15 @@ class ObjectTable {
                 this.toolTip.container.style.left = '0px';
             }
         }
+        //hold our filtered and sorted object array
+        this.flat = {
+            all: [],
+            filtered: [],
+            page: []
+        }
+    }
+    //createTemplates will create a template for each table element. That cssText will be copied to new instances
+    createTemplates() {
         this.table = document.createElement('table'); //style template for the table
         this.table.style.display = 'inline-block';
         this.table.style.width = 'auto';
@@ -237,12 +251,6 @@ class ObjectTable {
         this.tableImage.style.paddingTop = '0px';
         this.tableImage.style.paddingBottom = '0px';
         this.tableImage.style.alignSelf = 'center';
-        //hold our filtered and sorted object array
-        this.flat = {
-            all: [],
-            filtered: [],
-            page: []
-        }
     }
     //flatten will take in an object and return an object with any sub-objects flattened; called in filter()
     // note: flatten will also convert arrays to comma-separated strings
@@ -450,6 +458,7 @@ class ObjectTable {
         if (this.config.keyToSort) {
             this.sort(this.config.keyToSort, this.config.sortDescend);
         }
+        this.createTemplates();
         const totalKeys = Object.keys(this._controls.allKeys).length;
         let shownKeys = 0;
         for (const display of Object.values(this._controls.allKeys)) {
@@ -463,7 +472,14 @@ class ObjectTable {
                 totalPages++;
             }
         }
-        const containerWidth = window.getComputedStyle(container).width;
+        let containerWidth = window.getComputedStyle(container).width;
+        let parent = container;
+        while (containerWidth === '0px') {
+            parent = parent.parentElement;
+            if (!parent) {break}
+            containerWidth = window.getComputedStyle(parent).width;
+        }
+        if (containerWidth === '0') {containerWidth = '100%'}
         //set 'before' bg colors for hover highlighting
         const defBG = window.getComputedStyle(container).backgroundColor;
         if (!this.tableColors.trEvenBG) {
@@ -491,10 +507,12 @@ class ObjectTable {
         //add caption (top row: refresh > csv > caption > add > close; bottom row: header / page info)
         const tblCap = document.createElement('caption');
         tblCap.style.cssText = this.tableCaption.style.cssText;
+        tblCap.id = `${this.name}_Caption`;
         const tblCapDiv = document.createElement('div');
         tblCapDiv.style.flexDirection = 'column';
         tblCapDiv.style.alignItems = 'center';
         const tblCapR1 = document.createElement('div');
+        tblCapR1.id = `${this.name}_Caption_R1`;
         tblCapR1.style.display = 'flex';
         tblCapR1.style.flexDirection = 'row';
         tblCapR1.style.width = '100%';
@@ -502,37 +520,33 @@ class ObjectTable {
         tblCapR1.style.alignItems = 'center';
         tblCapR1.style.justifyContent = this.tableCaption.style.textAlign;
 
-        const refreshImg = document.createElement('img');
-        refreshImg.style.cssText = this.tableImage.style.cssText;
-        refreshImg.style.paddingLeft = this.tablePadding.left;
-        refreshImg.style.paddingRight = this.tablePadding.right;
-        refreshImg.src = this.imageSrc.refresh;
-        refreshImg.alt = 'repopulate table';
         if (this.config.showRefresh) {
+            const refreshImg = document.createElement('img');
+            refreshImg.style.cssText = this.tableImage.style.cssText;
+            refreshImg.style.paddingLeft = this.tablePadding.left;
+            refreshImg.style.paddingRight = this.tablePadding.right;
+            refreshImg.src = this.imageSrc.refresh;
+            refreshImg.alt = 'repopulate table';
             refreshImg.style.cursor = 'pointer';
             refreshImg.onclick = this.config.funcRefresh;
             refreshImg.onmouseover = (e) => {this.toolTip.show(e, 'repopulate table from source')};
             refreshImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            refreshImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(refreshImg);
         }
-        tblCapR1.appendChild(refreshImg);
 
-        const csvImg = document.createElement('img');
-        csvImg.style.cssText = this.tableImage.style.cssText;
-        csvImg.style.paddingLeft = this.tablePadding.left;
-        csvImg.style.paddingRight = this.tablePadding.right;
-        csvImg.src = this.imageSrc.csv;
-        csvImg.alt = 'download CSV';
         if (this.config.showCSV) {
+            const csvImg = document.createElement('img');
+            csvImg.style.cssText = this.tableImage.style.cssText;
+            csvImg.style.paddingLeft = this.tablePadding.left;
+            csvImg.style.paddingRight = this.tablePadding.right;
+            csvImg.src = this.imageSrc.csv;
+            csvImg.alt = 'download CSV';
             csvImg.style.cursor = 'pointer';
             csvImg.onclick = () => this.downloadCSV();
             csvImg.onmouseover = (e) => {this.toolTip.show(e, 'download CSV file')};
             csvImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            csvImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(csvImg);
         }
-        tblCapR1.appendChild(csvImg);
 
         const capHTML = document.createElement('div');
         capHTML.style.display = 'flex';
@@ -545,41 +559,38 @@ class ObjectTable {
         capHTML.appendChild(capInnerDiv);
         tblCapR1.appendChild(capHTML);
 
-        const addImg = document.createElement('img');
-        addImg.style.cssText = this.tableImage.style.cssText;
-        addImg.style.paddingLeft = this.tablePadding.left;
-        addImg.style.paddingRight = this.tablePadding.right;
-        addImg.src = this.imageSrc.add;
-        addImg.alt = 'add new';
         if (this.config.showAdd) {
+            const addImg = document.createElement('img');
+            addImg.style.cssText = this.tableImage.style.cssText;
+            addImg.style.paddingLeft = this.tablePadding.left;
+            addImg.style.paddingRight = this.tablePadding.right;
+            addImg.src = this.imageSrc.add;
+            addImg.alt = 'add new';
             addImg.style.cursor = 'pointer';
             addImg.onclick = this.config.funcAdd;
             addImg.onmouseover = (e) => {this.toolTip.show(e, 'add new object to source')};
             addImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            addImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(addImg);
         }
-        tblCapR1.appendChild(addImg);
 
-        const closeImg = document.createElement('img');
-        closeImg.style.cssText = this.tableImage.style.cssText;
-        closeImg.style.paddingLeft = this.tablePadding.left;
-        closeImg.style.paddingRight = this.tablePadding.right;
-        closeImg.src = this.imageSrc.close;
-        closeImg.alt = 'close table';
         if (this.config.showClose) {
+            const closeImg = document.createElement('img');
+            closeImg.style.cssText = this.tableImage.style.cssText;
+            closeImg.style.paddingLeft = this.tablePadding.left;
+            closeImg.style.paddingRight = this.tablePadding.right;
+            closeImg.src = this.imageSrc.close;
+            closeImg.alt = 'close table';
             closeImg.style.cursor = 'pointer';
             closeImg.onclick = this.config.funcClose;
             closeImg.onmouseover = (e) => {this.toolTip.show(e, 'close table')};
             closeImg.onmouseout = () => {this.toolTip.hide()};
-        } else {
-            closeImg.style.visibility = 'hidden';
+            tblCapR1.appendChild(closeImg);
         }
-        tblCapR1.appendChild(closeImg);
         tblCapDiv.appendChild(tblCapR1);
 
-        if (!this.config.hideHeaderSelect && !this.config.hidePagination) {
+        if (!this.config.hideHeaderSelect || !this.config.hidePagination) {
             const tblCapR2 = document.createElement('div');
+            tblCapR2.id = `${this.name}_Caption_R2`;
             tblCapR2.style.display = 'flex';
             tblCapR2.style.flexDirection = 'row';
             tblCapR2.style.width = '100%';
@@ -589,81 +600,88 @@ class ObjectTable {
             tblCapR2.style.fontWeight = 'normal';
             tblCapR2.style.fontSize = 'small';
 
-            if (!this.config.hidePagination && this.flat.filtered.length > 0) {
+            if (!this.config.hidePagination) {
                 const pageControl = document.createElement('div');
                 pageControl.style.display = 'flex';
                 pageControl.style.flexDirection = 'row';
                 pageControl.style.flexGrow = '1';
                 pageControl.style.justifyContent = 'left';
                 pageControl.style.paddingRight = this.tablePadding.innerCaptionSides;
-                if (this.config.paginate > 0) {
-                    const firstPage = document.createElement('a');
-                    firstPage.style.color = '#cccccc';
-                    firstPage.innerHTML = '&lt;&lt;';
-                    if (!(this._controls.pageNum < 2)) {
-                        firstPage.href = '#';
-                        firstPage.style.color = this.tableColors.clickColor;
-                        firstPage.onclick = () => {
-                            this._controls.pageNum = 1;
-                            this.display(this._controls.containerID);
+                if (totalPages > 1) {
+                    if (this.config.paginate > 0) {
+                        const firstPage = document.createElement('a');
+                        firstPage.style.color = '#cccccc';
+                        firstPage.innerHTML = '&lt;&lt;';
+                        if (!(this._controls.pageNum < 2)) {
+                            firstPage.href = '#';
+                            firstPage.style.color = this.tableColors.clickColor;
+                            firstPage.onclick = () => {
+                                this._controls.pageNum = 1;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(firstPage);
-                    const prevPage = document.createElement('a');
-                    prevPage.style.paddingLeft = this.tablePadding.paginator;
-                    prevPage.style.color = '#cccccc';
-                    prevPage.innerHTML = '&lt;';
-                    if (!(this._controls.pageNum < 2)) {
-                        prevPage.href = '#';
-                        prevPage.style.color = this.tableColors.clickColor;
-                        prevPage.onclick = () => {
-                            this._controls.pageNum--;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(firstPage);
+                        const prevPage = document.createElement('a');
+                        prevPage.style.paddingLeft = this.tablePadding.paginator;
+                        prevPage.style.color = '#cccccc';
+                        prevPage.innerHTML = '&lt;';
+                        if (!(this._controls.pageNum < 2)) {
+                            prevPage.href = '#';
+                            prevPage.style.color = this.tableColors.clickColor;
+                            prevPage.onclick = () => {
+                                this._controls.pageNum--;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(prevPage);
-                    const pageNum = document.createElement('a');
-                    pageNum.style.paddingLeft = this.tablePadding.paginator;
-                    pageNum.href = '#';
-                    pageNum.style.color = this.tableColors.clickColor;
-                    pageNum.innerHTML = `${this._controls.pageNum}`;
-                    pageNum.onclick = () => {
-                        const value = parseInt(prompt('Page Number:'));
-                        if (this.isNumber(value)) {
-                            this._controls.pageNum = value;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(prevPage);
+                        const pageNum = document.createElement('a');
+                        pageNum.style.paddingLeft = this.tablePadding.paginator;
+                        pageNum.href = '#';
+                        pageNum.style.color = this.tableColors.clickColor;
+                        pageNum.innerHTML = `${this._controls.pageNum}`;
+                        pageNum.onclick = () => {
+                            const value = parseInt(prompt('Page Number:'));
+                            if (this.isNumber(value)) {
+                                this._controls.pageNum = value;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(pageNum);
-                    const pageTotal = document.createElement('a');
-                    pageTotal.innerHTML = `/${totalPages}`;
-                    pageControl.appendChild(pageTotal);
-                    const nextPage = document.createElement('a');
-                    nextPage.style.paddingLeft = this.tablePadding.paginator;
-                    nextPage.style.color = '#cccccc';
-                    nextPage.innerHTML = '&gt;';
-                    if (this._controls.pageNum < totalPages) {
-                        nextPage.href = '#';
-                        nextPage.style.color = this.tableColors.clickColor;
-                        nextPage.onclick = () => {
-                            this._controls.pageNum++;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(pageNum);
+                        const pageTotal = document.createElement('a');
+                        pageTotal.innerHTML = `/${totalPages}`;
+                        pageControl.appendChild(pageTotal);
+                        const nextPage = document.createElement('a');
+                        nextPage.style.paddingLeft = this.tablePadding.paginator;
+                        nextPage.style.color = '#cccccc';
+                        nextPage.innerHTML = '&gt;';
+                        if (this._controls.pageNum < totalPages) {
+                            nextPage.href = '#';
+                            nextPage.style.color = this.tableColors.clickColor;
+                            nextPage.onclick = () => {
+                                this._controls.pageNum++;
+                                this.display(this._controls.containerID);
+                            }
                         }
-                    }
-                    pageControl.appendChild(nextPage);
-                    const lastPage = document.createElement('a');
-                    lastPage.style.paddingLeft = this.tablePadding.paginator;
-                    lastPage.style.color = '#cccccc';
-                    lastPage.innerHTML = '&gt;&gt;';
-                    if (this._controls.pageNum < totalPages) {
-                        lastPage.href = '#';
-                        lastPage.style.color = this.tableColors.clickColor;
-                        lastPage.onclick = () => {
-                            this._controls.pageNum = totalPages;
-                            this.display(this._controls.containerID);
+                        pageControl.appendChild(nextPage);
+                        const lastPage = document.createElement('a');
+                        lastPage.style.paddingLeft = this.tablePadding.paginator;
+                        lastPage.style.color = '#cccccc';
+                        lastPage.innerHTML = '&gt;&gt;';
+                        if (this._controls.pageNum < totalPages) {
+                            lastPage.href = '#';
+                            lastPage.style.color = this.tableColors.clickColor;
+                            lastPage.onclick = () => {
+                                this._controls.pageNum = totalPages;
+                                this.display(this._controls.containerID);
+                            }
                         }
+                        pageControl.appendChild(lastPage);
                     }
-                    pageControl.appendChild(lastPage);
+                } else {
+                    const placeHolder = document.createElement('a');
+                    placeHolder.style.color = '#cccccc';
+                    placeHolder.innerHTML = `&lt;1&gt;`;
+                    pageControl.appendChild(placeHolder);
                 }
                 tblCapR2.appendChild(pageControl);
             }
@@ -697,8 +715,90 @@ class ObjectTable {
         //add headers
         let colCount = 0;
         const hdrRow = document.createElement('tr')
+        hdrRow.id = `${this.name}_Header`;
         hdrRow.style.cssText = this.tableRow.style.cssText;
 
+        this._controls.selected = {};
+        //add left multiSelect headers
+        for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+            if (!hdrObj['before']) {continue}
+            const headerTxt = hdr;
+            this._controls.selected[hdr] = [];
+
+            const tblHead = document.createElement('th');
+            tblHead.style.cssText = this.tableHeader.style.cssText;
+
+            const thDiv = document.createElement('div');
+            thDiv.style.display = 'flex';
+            thDiv.style.flexDirection = 'column';
+            thDiv.style.alignItems = 'center';
+
+            const thR1 = document.createElement('div');
+            thR1.style.display = 'flex';
+            thR1.style.width = '100%';
+            thR1.style.flexDirection = 'row';
+            thR1.style.justifyContent = 'center';
+            const selectClick = document.createElement('a');
+            selectClick.innerHTML = headerTxt;
+            selectClick.href = '#';
+            selectClick.style.color = this.tableColors.clickColor;
+            selectClick.onclick = () => {
+                let ary = [];
+                for (const obj of this._controls.selected[hdr]) {
+                    if (obj['selected']) {
+                        ary.push(obj['value']);
+                    }
+                }
+                hdrObj['func'](ary);
+            }
+            thR1.appendChild(selectClick);
+            thDiv.appendChild(thR1);
+
+            const thR2 = document.createElement('div');
+            thR2.style.display = 'flex';
+            thR2.style.width = '100%';
+            thR2.style.flexDirection = 'row';
+            thR2.style.justifyContent = 'center';
+            thR2.style.paddingTop = this.tablePadding.innerColumnTop;
+            const invertIcon = document.createElement('img')
+            invertIcon.style.cssText = this.tableImage.style.cssText;
+            invertIcon.src = this.imageSrc.selectInverse;
+            invertIcon.alt = 'select inverse';
+            invertIcon.style.cursor = 'pointer';
+            invertIcon.onclick = () => {
+                for (const obj of this._controls.selected[hdr]) {
+                    obj['selected'] = !obj['selected'];
+                    document.getElementById(obj['boxID']).checked = obj['selected'];
+                }
+                document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+            }
+            invertIcon.onmouseover = (e) => {this.toolTip.show(e, 'invert selection')};
+            invertIcon.onmouseout = () => {this.toolTip.hide()};
+            thR2.appendChild(invertIcon);
+            const selectCount = document.createElement('div');
+            selectCount.id = `selectColumn${hdr}`;
+            selectCount.style.display = 'flex';
+            selectCount.style.justifyContent = 'center';
+            selectCount.style.flexGrow = '1';
+            selectCount.innerHTML = `(${this.selectedCount(hdr)})`;
+            thR2.appendChild(selectCount);
+            const selectAllIcon = document.createElement('img');
+            selectAllIcon.id = `selectAllIcon${hdr}`;
+            selectAllIcon.style.cssText = this.tableImage.style.cssText;
+            selectAllIcon.style.cursor = 'pointer';
+            selectAllIcon.src = this.imageSrc.selectAll;
+            selectAllIcon.alt = 'select all';
+            selectAllIcon.onclick = () => {this.selectAll(hdr)};
+            selectAllIcon.onmouseover = (e) => {this.toolTip.show(e, 'select all')};
+            selectAllIcon.onmouseout = () => {this.toolTip.hide()};
+            thR2.appendChild(selectAllIcon);
+            thDiv.appendChild(thR2);
+            tblHead.appendChild(thDiv);
+            hdrRow.appendChild(tblHead);
+            colCount++;
+        }
+
+        //add object headers
         for (const [key, display] of Object.entries(this._controls.allKeys)) {
             if (!display) {continue}
             const headerTxt = (this.config.headerOverrides.hasOwnProperty(key)) ? this.config.headerOverrides[key] : key;
@@ -734,7 +834,16 @@ class ObjectTable {
             thR1.style.width = '100%';
             thR1.style.flexDirection = 'row';
             thR1.style.justifyContent = 'center';
-            thR1.innerText = headerTxt;
+            if (this.config.headerLinks.hasOwnProperty(key)) {
+                const link = document.createElement('a')
+                link.href = '#';
+                link.style.color = this.tableColors.clickColor;
+                link.innerHTML = `${headerTxt}`
+                link.onclick = this.config.headerLinks[key].bind(null, key);
+                thR1.appendChild(link);
+            } else {
+                thR1.innerHTML = headerTxt;
+            }
             thDiv.appendChild(thR1);
 
             const thR2 = document.createElement('div');
@@ -845,9 +954,9 @@ class ObjectTable {
             hdrRow.appendChild(tblHead);
             colCount++;
         }
-        this._controls.selected = {};
-        //add multiSelect headers
-        for (const hdr in this.config.multiSelect) {
+        //add right multiSelect headers
+        for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+            if (hdrObj['before']) {continue}
             const headerTxt = hdr;
             this._controls.selected[hdr] = [];
 
@@ -875,7 +984,7 @@ class ObjectTable {
                         ary.push(obj['value']);
                     }
                 }
-                this.config.multiSelect[hdr]['func'](ary);
+                hdrObj['func'](ary);
             }
             thR1.appendChild(selectClick);
             thDiv.appendChild(thR1);
@@ -939,6 +1048,7 @@ class ObjectTable {
             const obj = this.flat.filtered[i];
             this.flat.page.push(obj);
             const tblRow = document.createElement('tr');
+            tblRow.id = `${this.name}_Row_${rowCount}`;
             tblRow.style.cssText = this.tableRow.style.cssText;
             if (rowCount % 2 === 0) {
                 if (this.tableColors.trEvenBG) {
@@ -954,6 +1064,73 @@ class ObjectTable {
                 tblRow.onmouseover = () => {tblRow.style.backgroundColor = this.tableColors.trHoverBG}
                 tblRow.onmouseout = () => {tblRow.style.backgroundColor = ogBG}
             }
+
+            //left multiselect checkBoxes
+            for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+                if (!hdrObj['before']) {continue}
+                let valueKey = hdrObj['keyOverride'];
+                let value = (valueKey) ? obj[valueKey] : obj[this.config.keyForUID];
+                const tblData = document.createElement('td');
+                tblData.style.cssText = this.tableData.style.cssText;
+                if (!(hdrObj.hasOwnProperty('omit') && hdrObj['omit'].includes(value))) {
+                    const boxDiv = document.createElement('div');
+                    boxDiv.style.display = 'flex';
+                    boxDiv.style.flexDirection = 'row';
+                    boxDiv.style.width = '100%';
+                    boxDiv.style.alignItems = 'center';
+                    boxDiv.style.justifyContent = 'center';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.id = `select.${hdr}.${rowCount}`;
+                    if (this.config.keyForUID) {
+                        box.id = `select.${hdr}.${value}`;
+                    }
+                    this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
+                    box.onclick = (e) => {
+                        //check for shift held and shift select
+                        if (e.shiftKey && this._controls.lastClickedBox['boxID'] && this._controls.lastClickedBox['header'] === hdr) {
+                            let index1 = -1;
+                            let index2 = -1;
+                            for (let i = 0; i < this._controls.selected[hdr].length; i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                if (obj['boxID'] === box.id) {index2 = i}
+                                if (obj['boxID'] === this._controls.lastClickedBox['boxID']) {index1 = i}
+                            }
+                            const box1Checked = this._controls.selected[hdr][index1]['selected'];
+                            let boxes = [];
+                            const unqValues = new Set();
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const oSelected = this._controls.selected[hdr][i];
+                                unqValues.add(oSelected['selected']);
+                                const bBox = document.getElementById(oSelected['boxID']);
+                                boxes.push(bBox);
+                            }
+                            const newBool = (unqValues.size === 1) ? !box1Checked : box1Checked;
+                            for (let i = Math.min(index1, index2); i <= Math.max(index1, index2); i++) {
+                                const obj = this._controls.selected[hdr][i];
+                                obj['selected'] = newBool;
+                            }
+                            for (const bBox of boxes) {
+                                bBox.checked = newBool;
+                            }
+                        } else {
+                            //toggle box
+                            this._controls.lastClickedBox = {'boxID': box.id, 'header': hdr};
+                            for (const obj of this._controls.selected[hdr]) {
+                                if (obj['boxID'] === box.id) {
+                                    obj['selected'] = box.checked;
+                                    break;
+                                }
+                            }
+                        }
+                        document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                    }
+                    boxDiv.appendChild(box);
+                    tblData.appendChild(boxDiv);
+                }
+                tblRow.appendChild(tblData);
+            }
+
             //values
             for (const [key, display] of Object.entries(this._controls.allKeys)) {
                 if (!display) {continue}
@@ -988,13 +1165,14 @@ class ObjectTable {
                 }
                 tblRow.appendChild(tblData);
             }
-            //multiselect
-            for (const hdr in this.config.multiSelect) {
-                let valueKey = this.config.multiSelect[hdr]['keyOverride'];
+            //right multiselect checkBoxes
+            for (const [hdr, hdrObj] of Object.entries(this.config.multiSelect)) {
+                if (hdrObj['before']) {continue}
+                let valueKey = hdrObj['keyOverride'];
                 let value = (valueKey) ? obj[valueKey] : obj[this.config.keyForUID];
                 const tblData = document.createElement('td');
                 tblData.style.cssText = this.tableData.style.cssText;
-                if (!(this.config.multiSelect[hdr].hasOwnProperty('omit') && this.config.multiSelect[hdr]['omit'].includes(value))) {
+                if (!(hdrObj.hasOwnProperty('omit') && hdrObj['omit'].includes(value))) {
                     const boxDiv = document.createElement('div');
                     boxDiv.style.display = 'flex';
                     boxDiv.style.flexDirection = 'row';
@@ -1059,6 +1237,7 @@ class ObjectTable {
         }
         //add footer
         const tfRow = document.createElement('tr');
+        tfRow.id = `${this.name}_Footer`;
         tfRow.style.cssText = '';
         const tblFoot = document.createElement('td');
         tblFoot.colSpan = colCount;
@@ -1075,7 +1254,7 @@ class ObjectTable {
             tblFootR1.innerHTML = (this.objects.length === 0) ? 'Data set is empty' : 'Filter returned empty set';
             tblFoot.appendChild(tblFootR1);
         }
-        if (this.flat.filtered.length > 0) {
+        if (this.flat.filtered.length > 0 && !this.config.hidePagination) {
             const tblFootR2 = document.createElement('div');
             tblFootR2.style.cssText = this.tableFooter.style.cssText;
             tblFootR2.style.display = 'flex';
@@ -1340,14 +1519,16 @@ class ObjectTable {
                 }
             }
             //make sure any specified keys are present
-            if (!this.isArray(this.config.keysToShow) || (this.config.keysToShow.length > 0 && !this.isString(this.config.keysToShow[0]))) {
-                fail += 1;
-                console.error(`t.config.keysToShow is not an array of strings (empty is ok)`);
-            }
-            for (const key of this.config.keysToShow) {
-                if (!allKeys.has(key) && this.objects.length > 0) {
+            if (this.objects.length > 0) {
+                if (!this.isArray(this.config.keysToShow) || (this.config.keysToShow.length > 0 && !this.isString(this.config.keysToShow[0]))) {
                     fail += 1;
-                    console.error(`specified key ${key} is not a key in the provided objects`);
+                    console.error(`t.config.keysToShow is not an array of strings (empty is ok)`);
+                }
+                for (const key of this.config.keysToShow) {
+                    if (!allKeys.has(key)) {
+                        fail += 1;
+                        console.error(`specified key ${key} is not a key in the provided objects`);
+                    }
                 }
             }
             //use our specified keys first to establish ordering
@@ -1363,29 +1544,81 @@ class ObjectTable {
                     this._controls.allKeys[key] = !predefined;
                 }
             }
-        }
-        if (Object.keys(this._controls.allKeys).length === 0) {
-            fail += 1;
-            console.error(`no object keys could be found in the provided objects`);
+            if (this.objects.length > 0) {
+                //make sure we found some keys
+                if (Object.keys(this._controls.allKeys).length === 0) {
+                    fail += 1;
+                    console.error(`no object keys could be found in the provided objects`);
+                }
+                //check other elements that rely on objects > 0
+                if (!this.isObject(this.config.headerOverrides)) {
+                    fail += 1;
+                    console.error(`t.config.headerOverrides is not an object`);
+                } else {
+                    for (const [key, value] of Object.entries(this.config.headerOverrides)) {
+                        if (!this.isString(value)) {
+                            fail += 1;
+                            console.error(`t.config.headerOverrides[${key}] is not a string`);
+                        } else if (!this._controls.allKeys.hasOwnProperty(key)) {
+                            fail += 1;
+                            console.error(`t.config.headerOverrides[${key}] is not a key in the provided objects`);
+                        }
+                    }
+                }
+                for (const key of this.config.showFilterFor) {
+                    if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
+                        fail += 1;
+                        console.error(`specified key ${key} is not a key in the provided objects`);
+                    }
+                }
+                if (!this.isObject(this.config.filterValues)) {
+                    fail += 1;
+                    console.error(`t.config.filterValues is not an object`);
+                } else {
+                    for (const [hdr, value] of Object.entries(this.config.filterValues)) {
+                        if (!(this.config.showFilterFor.includes(hdr) || this.config.showFilterFor.includes('*'))) {
+                            fail += 1;
+                            console.error(`filtered key ${hdr} is not marked in showFilterFor (won't be able to change filter)`);
+                        }
+                        if (!this.isString(value)) {
+                            fail += 1;
+                            console.error(`t.config.filterValues[${hdr}] is not a string`);
+                        } else if (!this._controls.allKeys.hasOwnProperty(hdr)) {
+                            fail += 1;
+                            console.error(`t.config.filterValues[${hdr}] is not a key in the provided objects`);
+                        }
+                    }
+                }
+                if (!this.isArray(this.config.showSortFor) || (this.config.showSortFor.length > 0 && !this.isString(this.config.showSortFor[0]))) {
+                    fail += 1;
+                    console.error(`t.config.showSortFor is not an array of strings (empty is ok)`);
+                }
+                for (const key of this.config.showSortFor) {
+                    if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
+                        fail += 1;
+                        console.error(`specified key ${key} is not a key in the provided objects`);
+                    }
+                }
+                if (!this.isString(this.config.keyToSort)) {
+                    fail += 1;
+                    console.error(`t.config.keyToSort is not a string (empty is ok)`);
+                }
+                if (this.config.keyToSort && !this.config.keyToSort in this._controls.allKeys) {
+                    fail += 1;
+                    console.error(`t.config.keyToSort is not is not a key in the provided objects`);
+                }
+                for (const key of this.config.applyImagesTo) {
+                    if (!this._controls.allKeys.hasOwnProperty(key)) {
+                        fail += 1;
+                        console.error(`specified key ${key} is not a key in the provided objects`);
+                    }
+                }
+            }
         }
         //check config elements
         if (!this.isString(this.config.keyForUID)) {
             fail += 1;
             console.error(`t.config.keyForUID is not a string`);
-        }
-        if (!this.isObject(this.config.headerOverrides)) {
-            fail += 1;
-            console.error(`t.config.headerOverrides is not an object`);
-        } else {
-            for (const [key, value] of Object.entries(this.config.headerOverrides)) {
-                if (!this.isString(value)) {
-                    fail += 1;
-                    console.error(`t.config.headerOverrides[${key}] is not a string`);
-                } else if (!this._controls.allKeys.hasOwnProperty(key)) {
-                    fail += 1;
-                    console.error(`t.config.headerOverrides[${key}] is not a key in the provided objects`);
-                }
-            }
         }
         if (!this.isString(this.config.captionHTML) || this.config.captionHTML === '') {
             fail += 1;
@@ -1423,48 +1656,6 @@ class ObjectTable {
             fail += 1;
             console.error(`t.config.showFilterFor is not an array of strings (empty is ok)`);
         }
-        for (const key of this.config.showFilterFor) {
-            if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
-        }
-        if (!this.isObject(this.config.filterValues)) {
-            fail += 1;
-            console.error(`t.config.filterValues is not an object`);
-        } else {
-            for (const [hdr, value] of Object.entries(this.config.filterValues)) {
-                if (!(this.config.showFilterFor.includes(hdr) || this.config.showFilterFor.includes('*'))) {
-                    fail += 1;
-                    console.error(`filtered key ${hdr} is not marked in showFilterFor (won't be able to change filter)`);
-                }
-                if (!this.isString(value)) {
-                    fail += 1;
-                    console.error(`t.config.filterValues[${hdr}] is not a string`);
-                } else if (!this._controls.allKeys.hasOwnProperty(hdr)) {
-                    fail += 1;
-                    console.error(`t.config.filterValues[${hdr}] is not a key in the provided objects`);
-                }
-            }
-        }
-        if (!this.isArray(this.config.showSortFor) || (this.config.showSortFor.length > 0 && !this.isString(this.config.showSortFor[0]))) {
-            fail += 1;
-            console.error(`t.config.showSortFor is not an array of strings (empty is ok)`);
-        }
-        for (const key of this.config.showSortFor) {
-            if (!(this._controls.allKeys.hasOwnProperty(key) || key === '*')) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
-        }
-        if (!this.isString(this.config.keyToSort)) {
-            fail += 1;
-            console.error(`t.config.keyToSort is not a string (empty is ok)`);
-        }
-        if (this.config.keyToSort && !this.config.keyToSort in this._controls.allKeys) {
-            fail += 1;
-            console.error(`t.config.keyToSort is not is not a key in the provided objects`);
-        }
         if (!this.isBoolean(this.config.sortDescend)) {
             fail += 1;
             console.error(`t.config.sortDescend is not a boolean`);
@@ -1491,6 +1682,17 @@ class ObjectTable {
                         fail += 1;
                         console.error(`t.config.links[${hdr}] does not have a function assigned`);
                     }
+                }
+            }
+        }
+        if (!this.isObject(this.config.headerLinks)) {
+            fail += 1;
+            console.error(`t.config.headerLinks is not an object`);
+        } else {
+            for (const [key, keyFunc] of Object.entries(this.config.headerLinks)) {
+                if (!this.isString(key) || !this.isFunction(keyFunc)) {
+                    fail += 1;
+                    console.error(`t.config.headerLinks must have {string: function} mappings`);
                 }
             }
         }
@@ -1542,12 +1744,6 @@ class ObjectTable {
         if (!this.isArray(this.config.applyImagesTo) || (this.config.applyImagesTo.length > 0 && !this.isString(this.config.applyImagesTo[0]))) {
             fail += 1;
             console.error(`t.config.applyImagesTo is not an array of strings (empty is ok)`);
-        }
-        for (const key of this.config.applyImagesTo) {
-            if (!this._controls.allKeys.hasOwnProperty(key)) {
-                fail += 1;
-                console.error(`specified key ${key} is not a key in the provided objects`);
-            }
         }
         if (fail > 0) {
             let msg = `${fail} ${(fail===1)?'error':'errors'} prevented verification. See console for details`;

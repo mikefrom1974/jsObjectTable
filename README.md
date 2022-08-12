@@ -14,6 +14,22 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
+**1.3.0**
+* *Fixed*: pagination and header controls not showing
+* *Fixed*: various layout issues
+* *Fixed*: hiding pagination didn't hide pagination footer
+* *Fixed*: some table settings not taking effect
+* *Fixed*: false 'missing key' error on empty sets
+* *Changed*: main table rows now have IDs for post-processing
+* *Changed*: caption images no longer take up space when hidden
+* *Added*: header link functions
+* *Added*: ability to show multiSelect headers before object headers
+
+**1.2.5**
+* *Fixed*: sorting issues
+* *Fixed*: empty sets from source throwing errors
+* *fixed*: td newlines and tabs not showing properly
+
 **1.2.1**
 * *Fixed*: Undefined error in header select
 * *Added*: Reorder headers
@@ -28,4 +44,3 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## ToDo:
 * settings cog to change colors / style
 * default color schemes (dark mode)
-* allow reordering headers by dragging rows
