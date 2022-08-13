@@ -783,7 +783,7 @@ class ObjectTable {
             selectCount.innerHTML = `(${this.selectedCount(hdr)})`;
             thR2.appendChild(selectCount);
             const selectAllIcon = document.createElement('img');
-            selectAllIcon.id = `${this.name}_selectAllIcon${hdr}`;
+            selectAllIcon.id = `${this.name}_selectAllIcon_${hdr}`;
             selectAllIcon.style.cssText = this.tableImage.style.cssText;
             selectAllIcon.style.cursor = 'pointer';
             selectAllIcon.src = this.imageSrc.selectAll;
