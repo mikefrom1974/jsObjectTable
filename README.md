@@ -14,6 +14,9 @@ Note: The Javascript file is heavily commented and not compressed for ease of mo
 ## Change Log
 (Semantic Versioning)
 
+**dev**
+* *Fixed*: multiple tables on one page (added table name to ids)
+
 **1.3.0**
 * *Fixed*: pagination and header controls not showing
 * *Fixed*: various layout issues

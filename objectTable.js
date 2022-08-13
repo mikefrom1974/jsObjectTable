@@ -770,20 +770,20 @@ class ObjectTable {
                     obj['selected'] = !obj['selected'];
                     document.getElementById(obj['boxID']).checked = obj['selected'];
                 }
-                document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                document.getElementById(`${this.name}_selectColumn_${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
             }
             invertIcon.onmouseover = (e) => {this.toolTip.show(e, 'invert selection')};
             invertIcon.onmouseout = () => {this.toolTip.hide()};
             thR2.appendChild(invertIcon);
             const selectCount = document.createElement('div');
-            selectCount.id = `selectColumn${hdr}`;
+            selectCount.id = `${this.name}_selectColumn_${hdr}`;
             selectCount.style.display = 'flex';
             selectCount.style.justifyContent = 'center';
             selectCount.style.flexGrow = '1';
             selectCount.innerHTML = `(${this.selectedCount(hdr)})`;
             thR2.appendChild(selectCount);
             const selectAllIcon = document.createElement('img');
-            selectAllIcon.id = `selectAllIcon${hdr}`;
+            selectAllIcon.id = `${this.name}_selectAllIcon${hdr}`;
             selectAllIcon.style.cssText = this.tableImage.style.cssText;
             selectAllIcon.style.cursor = 'pointer';
             selectAllIcon.src = this.imageSrc.selectAll;
@@ -817,7 +817,7 @@ class ObjectTable {
             const sortDesc = (this.config.sortDescend);
             const tblHead = document.createElement('th');
             tblHead.style.cssText = this.tableHeader.style.cssText;
-            tblHead.id = `th${headerTxt}`;
+            tblHead.id = `${this.name}_th_${headerTxt}`;
             if (isUID) {
                 tblHead.style.backgroundColor = this.tableColors.uidHeaderBG;
             }
@@ -828,7 +828,7 @@ class ObjectTable {
             thDiv.style.display = 'flex';
             thDiv.style.flexDirection = 'column';
             thDiv.style.alignItems = 'center';
-            
+
             const thR1 = document.createElement('div');
             thR1.style.display = 'flex';
             thR1.style.width = '100%';
@@ -1005,20 +1005,20 @@ class ObjectTable {
                     obj['selected'] = !obj['selected'];
                     document.getElementById(obj['boxID']).checked = obj['selected'];
                 }
-                document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                document.getElementById(`${this.name}_selectColumn_${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
             }
             invertIcon.onmouseover = (e) => {this.toolTip.show(e, 'invert selection')};
             invertIcon.onmouseout = () => {this.toolTip.hide()};
             thR2.appendChild(invertIcon);
             const selectCount = document.createElement('div');
-            selectCount.id = `selectColumn${hdr}`;
+            selectCount.id = `${this.name}_selectColumn_${hdr}`;
             selectCount.style.display = 'flex';
             selectCount.style.justifyContent = 'center';
             selectCount.style.flexGrow = '1';
             selectCount.innerHTML = `(${this.selectedCount(hdr)})`;
             thR2.appendChild(selectCount);
             const selectAllIcon = document.createElement('img');
-            selectAllIcon.id = `selectAllIcon${hdr}`;
+            selectAllIcon.id = `${this.name}_selectAllIcon_${hdr}`;
             selectAllIcon.style.cssText = this.tableImage.style.cssText;
             selectAllIcon.style.cursor = 'pointer';
             selectAllIcon.src = this.imageSrc.selectAll;
@@ -1081,9 +1081,9 @@ class ObjectTable {
                     boxDiv.style.justifyContent = 'center';
                     const box = document.createElement('input');
                     box.type = 'checkbox';
-                    box.id = `select.${hdr}.${rowCount}`;
+                    box.id = `${this.name}_select_${hdr}_${rowCount}`;
                     if (this.config.keyForUID) {
-                        box.id = `select.${hdr}.${value}`;
+                        box.id = `${this.name}_select_${hdr}_${value}`;
                     }
                     this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
                     box.onclick = (e) => {
@@ -1123,7 +1123,7 @@ class ObjectTable {
                                 }
                             }
                         }
-                        document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                        document.getElementById(`${this.name}_selectColumn_${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
                     }
                     boxDiv.appendChild(box);
                     tblData.appendChild(boxDiv);
@@ -1181,9 +1181,9 @@ class ObjectTable {
                     boxDiv.style.justifyContent = 'center';
                     const box = document.createElement('input');
                     box.type = 'checkbox';
-                    box.id = `select.${hdr}.${rowCount}`;
+                    box.id = `${this.name}_select_${hdr}_${rowCount}`;
                     if (this.config.keyForUID) {
-                        box.id = `select.${hdr}.${value}`;
+                        box.id = `${this.name}_select_${hdr}_${value}`;
                     }
                     this._controls.selected[hdr].push({'boxID': box.id, 'value': value, 'selected': false});
                     box.onclick = (e) => {
@@ -1223,7 +1223,7 @@ class ObjectTable {
                                 }
                             }
                         }
-                        document.getElementById(`selectColumn${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
+                        document.getElementById(`${this.name}_selectColumn_${hdr}`).innerHTML = `(${this.selectedCount(hdr)})`;
                     }
                     boxDiv.appendChild(box);
                     tblData.appendChild(boxDiv);
@@ -1353,8 +1353,9 @@ class ObjectTable {
             const selected = hdrTable._controls.selected;
             hdrTable.display(this._controls.containerID);
             hdrTable._controls.selected = selected;
-            document.getElementById('thUp').innerHTML = '';
-            document.getElementById('thDown').innerHTML = '';
+            console.log(``)
+            document.getElementById(`${hdrTable.name}_th_Up`).innerHTML = '';
+            document.getElementById(`${hdrTable.name}_th_Down`).innerHTML = '';
             let totalHeaders = 0;
             let shownHeaders = 0;
             for (const obj of hdrTable._controls.selected['Show']) {
@@ -1362,11 +1363,11 @@ class ObjectTable {
                 document.getElementById(obj['boxID']).checked = obj['selected'];
                 if (obj['selected']) {shownHeaders++}
             }
-            document.getElementById('selectColumnShow').innerHTML = `(${shownHeaders})`;
+            document.getElementById(`${hdrTable.name}_selectColumn_Show`).innerHTML = `(${shownHeaders})`;
             if (shownHeaders === totalHeaders) {
-                document.getElementById('selectAllIconShow').src = hdrTable.imageSrc.selectNone;
-                document.getElementById('selectAllIconShow').alt = 'select none';
-                document.getElementById('selectAllIconShow').onclick = () => {hdrTable.selectNone('Show')};
+                document.getElementById(`${hdrTable.name}_selectAllIcon_Show`).src = hdrTable.imageSrc.selectNone;
+                document.getElementById(`${hdrTable.name}_selectAllIcon_Show`).alt = 'select none';
+                document.getElementById(`${hdrTable.name}_selectAllIcon_Show`).onclick = () => {hdrTable.selectNone('Show')};
             }
         }
         reDisplay();
@@ -1385,25 +1386,25 @@ class ObjectTable {
             obj['selected'] = true;
             document.getElementById(obj['boxID']).checked = true;
         }
-        const icon = document.getElementById(`selectAllIcon${sHdr}`);
+        const icon = document.getElementById(`${this.name}_selectAllIcon_${sHdr}`);
         icon.src = this.imageSrc.selectNone;
         icon.alt = 'select none';
         icon.onclick = () => {this.selectNone(sHdr)};
         icon.onmouseover = (e) => {this.toolTip.show(e, 'select none')};
         icon.onmouseout = () => {this.toolTip.hide()};
-        document.getElementById(`selectColumn${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
+        document.getElementById(`${this.name}_selectColumn_${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
     }
     selectNone(sHdr) {
         for (const obj of this._controls.selected[sHdr]) {
             obj['selected'] = false;
             document.getElementById(obj['boxID']).checked = false;
         }
-        const icon = document.getElementById(`selectAllIcon${sHdr}`);
+        const icon = document.getElementById(`${this.name}_selectAllIcon_${sHdr}`);
         icon.src = this.imageSrc.selectAll;
         icon.alt = 'select all';
         icon.onclick = () => {this.selectAll(sHdr)};
         icon.onmouseover = (e) => {this.toolTip.show(e, 'select all')};
-        document.getElementById(`selectColumn${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
+        document.getElementById(`${this.name}_selectColumn_${sHdr}`).innerHTML = `(${this.selectedCount(sHdr)})`;
     }
     //downloadCSV will convert the objects table into CSV and send it to the client
     downloadCSV() {
@@ -1411,7 +1412,7 @@ class ObjectTable {
         const container = document.getElementById(this._controls.containerID);
         const rect = container.getBoundingClientRect();
         const dlDiv = document.createElement('div');
-        dlDiv.id = 'downloadCSVDiv';
+        dlDiv.id = `${this.name}_downloadCSVDiv`;
         dlDiv.style.display = 'flex';
         dlDiv.style.flexDirection = 'row';
         dlDiv.style.justifyContent = 'center';
@@ -1483,12 +1484,12 @@ class ObjectTable {
                 csv += csvText;
                 let tmpLink = document.createElement('a');
                 let data = encodeURI(csv);
-                tmpLink.setAttribute('id', 'tmpLink');
+                tmpLink.setAttribute('id', `${this.name}_tmpLink`);
                 tmpLink.setAttribute('href', data);
                 tmpLink.setAttribute('download', fileName);
                 document.body.appendChild(tmpLink);
                 tmpLink.click();
-                document.body.removeChild(document.getElementById('tmpLink'));
+                document.body.removeChild(document.getElementById(`${this.name}_tmpLink`));
             }}
         }
         dlTable.display('downloadCSVDiv');
