@@ -1492,7 +1492,7 @@ class ObjectTable {
                 document.body.removeChild(document.getElementById(`${this.name}_tmpLink`));
             }}
         }
-        dlTable.display('downloadCSVDiv');
+        dlTable.display(`${this.name}_downloadCSVDiv`);
     }
     //verify will do a sanity check on the entire config and error out if anything is amiss
     verify() {
