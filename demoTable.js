@@ -52,7 +52,7 @@ function demoObjects() {
 }
 
 function demoShow(sID) {
-    alert(`This function should show info / edit for ${sID} (note we can omit certain values)`);
+    alert(`This function should show info / edit for ${sID} (note we can omit certain values from being clickable)`);
 }
 
 function demoAdd() {
@@ -60,7 +60,7 @@ function demoAdd() {
 }
 
 function demoDelete(aIDs) {
-    let msg = `This function should delete ${aIDs.length} objects from the source data and refresh the table (note we can omit values):`;
+    let msg = `This function should delete ${aIDs.length} objects from the source data and refresh the table (note we can omit values from being selected):`;
     for (const id of aIDs) {
         msg += `\n${id}`;
     }
